@@ -1,12 +1,11 @@
 'use client'
-
-<<<<<<< HEAD
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface Device {
   id: string
@@ -20,16 +19,62 @@ export default function Dashboard() {
     name: '',
     password: ''
   })
+  const router = useRouter()
 
-  const handleAddDevice = (e: React.FormEvent) => {
-    e.preventDefault()
-    const device = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newDevice.name
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      router.push('/login')
+      return
     }
-    setDevices([...devices, device])
-    setNewDevice({ name: '', password: '' })
-    setIsDialogOpen(false)
+    // Fetch devices from API here
+    fetchDevices()
+  }, [router])
+
+  const fetchDevices = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/devices', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      const data = await response.json()
+      if (response.ok) {
+        setDevices(data.devices)
+      }
+    } catch (error) {
+      console.error('Error fetching devices:', error)
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    router.push('/login')
+  }
+
+  const handleAddDevice = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/devices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newDevice)
+      })
+      
+      if (response.ok) {
+        const device = await response.json()
+        setDevices([...devices, device])
+        setNewDevice({ name: '', password: '' })
+        setIsDialogOpen(false)
+      }
+    } catch (error) {
+      console.error('Error adding device:', error)
+    }
   }
 
   return (
@@ -46,7 +91,7 @@ export default function Dashboard() {
             </Link>
             <Button 
               variant="outline"
-              onClick={() => console.log('Logout clicked')}
+              onClick={handleLogout}
               className="flex items-center gap-2"
             >
               <LogOut className="h-4 w-4" />
@@ -145,27 +190,4 @@ export default function Dashboard() {
     </div>
   )
 }
-=======
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 
-const Dashboard = () => {
-  const router = useRouter()
-
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push('/login')
-    }
-  }, [router])
-
-  return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-      {/* Add your dashboard content here */}
-    </div>
-  )
-}
-
-export default Dashboard
->>>>>>> e67eb1b (Implement authentication with Jotai state management and middleware for protected routes)
