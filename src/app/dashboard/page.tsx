@@ -12,12 +12,18 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar  from '@/components/dashboard/Navbar'
 
-const API_BASE_URL = 'http://localhost:8000/api'
+const API_BASE_URL = 'http://localhost:8000/api/v1'
 
 interface Device {
   _id: string       // Changed from 'id' to '_id' to match MongoDB
   deviceName: string
   createdAt: string
+  status?: {
+    isOnline: boolean
+    lastSeen: string
+    temperature?: number
+    humidity?: number
+  }
 }
 
 export default function Dashboard() {
@@ -41,15 +47,32 @@ export default function Dashboard() {
     setError(null)
 
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/v1/devices/list`, {
+      // Updated endpoint to match backend
+      const { data } = await axios.get(`${API_BASE_URL}/devices`, {
         headers: {
           'Authorization': `Bearer ${auth.token}`
         }
       })
 
-      if (Array.isArray(data.devices)) {
-        setDevices(data.devices)
-      }
+      // Get status for each device
+      const devicesWithStatus = await Promise.all(
+        data.devices.map(async (device: Device) => {
+          try {
+            const statusResponse = await axios.get(
+              `${API_BASE_URL}/devices/${device._id}/status`,
+              {
+                headers: { 'Authorization': `Bearer ${auth.token}` }
+              }
+            )
+            return { ...device, status: statusResponse.data }
+          } catch (err) {
+            console.warn(`Could not fetch status for device ${device._id}:`, err)
+            return device
+          }
+        })
+      )
+
+      setDevices(devicesWithStatus)
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
@@ -77,8 +100,9 @@ export default function Dashboard() {
   const handleAddDevice = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await axios.post(
-        `${API_BASE_URL}/devices/add`,
+      // Updated endpoint to match backend
+      const response = await axios.post(
+        `${API_BASE_URL}/devices`,
         newDevice,
         {
           headers: {
@@ -87,6 +111,7 @@ export default function Dashboard() {
         }
       )
       
+      console.log('Device added:', response.data)
       setNewDevice({ deviceName: '', password: '' })
       setIsDialogOpen(false)
       toast.success('Device added successfully')
@@ -116,6 +141,36 @@ export default function Dashboard() {
       }
     }
   }
+
+  const DeviceCard = ({ device }: { device: Device }) => (
+    <div className="p-6 border rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-[1.02] bg-white/90 relative group">
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          handleDeleteDevice(device._id);
+        }}
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full z-10"
+      >
+        <Trash2 className="h-4 w-4 text-red-500" />
+      </button>
+      <h3 className="font-medium text-gray-900 text-lg mb-2">{device.deviceName}</h3>
+      <div className="text-sm text-gray-500 flex items-center gap-2">
+        <span className={`inline-block w-2 h-2 rounded-full ${device.status?.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+        <span>{device.status?.isOnline ? 'Online' : 'Offline'}</span>
+      </div>
+      {device.status?.temperature && (
+        <p className="text-sm text-gray-600 mt-2">
+          Temperature: {device.status.temperature}°C
+        </p>
+      )}
+      <p className="text-xs text-gray-400 mt-2">
+        Last seen: {device.status?.lastSeen 
+          ? new Date(device.status.lastSeen).toLocaleString()
+          : 'Never'
+        }
+      </p>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
@@ -182,25 +237,7 @@ export default function Dashboard() {
                   key={device._id}
                   className="block cursor-pointer"
                 >
-                  <div className="p-6 border rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-[1.02] bg-white/90 relative group">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleDeleteDevice(device._id);
-                      }}
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full z-10"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </button>
-                    <h3 className="font-medium text-gray-900 text-lg mb-2">{device.deviceName}</h3>
-                    <p className="text-sm text-gray-500 flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
-                      ID: {device._id}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Added: {new Date(device.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
+                  <DeviceCard device={device} />
                 </Link>
               ))}
             </div>
