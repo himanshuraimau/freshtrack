@@ -68,15 +68,20 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen " style={{
-      background: "linear-gradient(to right, #0b1d35, #0f6a92)",
-    }}>
+    <motion.div className="min-h-screen " initial={{ backgroundColor: "#0b1d35" }}
+    animate={{ backgroundColor: "#0f6a92" }}
+    transition={{ duration: 10 , repeat: Infinity}}>
       <Toaster position="top-right" />
       <nav className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition-colors">Freshtrack</Link>
+            </div>
+            <div className="flex-shrink-0 flex items-center">
+            <Link href="/login" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium ml-3">
+              Log In
+            </Link>
             </div>
           </div>
         </div>
@@ -181,7 +186,7 @@ export default function SignUp() {
           </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
