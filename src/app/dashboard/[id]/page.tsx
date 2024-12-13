@@ -215,27 +215,39 @@ export default function DeviceDetails() {
       }
     };
 
-    // const fetchProducts = async () => {
-    //   try {
-    //     const response = await axios.get(`${API_BASE_URL}/products/${deviceId}`, {
-    //       headers: { Authorization: `Bearer ${auth.token}` },
-    //     });
-    //     setProducts(response.data);
-    //   } catch (err) {
-    //     console.error('Failed to fetch products:', err);
-    //     toast.error('Failed to load products');
-    //   }
-    // };
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/products/${deviceId}`, {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        });
+        setProducts(response.data.products);
+      } catch (err) {
+        console.error('Failed to fetch products:', err);
+        toast.error('Failed to load products');
+      }
+    };
 
     if (deviceId && auth.token) {
       fetchDeviceData();
-      // fetchProducts();
+      fetchProducts();
     }
   }, [deviceId, auth.token]);
 
-  const handleAddProduct = (newProduct: Omit<Product, 'id'>) => {
-    setProducts([...products, { ...newProduct, id: String(products.length + 1) }]);
-    toast.success('Product added successfully');
+  const handleAddProduct = async (newProduct: Omit<Product, 'id'>) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/products/${deviceId}`,
+        newProduct,
+        {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        }
+      );
+      setProducts([...products, response.data.product]);
+      toast.success('Product added successfully');
+    } catch (err) {
+      console.error('Failed to add product:', err);
+      toast.error('Failed to add product');
+    }
   };
 
   if (isLoading) {
