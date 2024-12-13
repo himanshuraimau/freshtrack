@@ -1,5 +1,13 @@
 'use client';
 
+// Add these imports at the top
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { useCallback, useState } from 'react';
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import axios from 'axios';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -8,13 +16,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import axios from 'axios';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from '@/hooks/useAuth';
 import Navbar from '@/components/dashboard/Navbar';
-import { useParams } from 'next/navigation';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
@@ -41,13 +48,22 @@ interface Product {
   destination: string;
   purchaseDate: string;
   expiryDate: string;
+  sourceLocation?: {
+    lat: number;
+    lng: number;
+  };
+  destinationLocation?: {
+    lat: number;
+    lng: number;
+  };
 }
 
-interface ProductsTableProps {
-  products: Product[];
-}
+const defaultCenter = {
+  lat: 13.0827,
+  lng: 80.2707
+};
 
-function ProductsTable({ products }: ProductsTableProps) {
+function ProductsTable({ products }: { products: Product[] }) {
   return (
     <div className="border rounded-lg mt-8">
       <Table>
@@ -84,14 +100,95 @@ function ProductsTable({ products }: ProductsTableProps) {
   );
 }
 
+function AddProductModal({ isOpen, onClose, onAddProduct }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddProduct: (product: Omit<Product, 'id'>) => void;
+}) {
+  const [formData, setFormData] = useState({
+    name: '',
+    source: '',
+    destination: '',
+    purchaseDate: '',
+    expiryDate: '',
+    sourceLocation: defaultCenter,
+    destinationLocation: defaultCenter,
+  });
+
+  const [mapType, setMapType] = useState<'source' | 'destination'>('source');
+  const [showMap, setShowMap] = useState(false);
+
+  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    const lat = e.latLng?.lat();
+    const lng = e.latLng?.lng();
+    
+    if (lat && lng) {
+      setFormData(prev => ({
+        ...prev,
+        [mapType === 'source' ? 'sourceLocation' : 'destinationLocation']: { lat, lng }
+      }));
+    }
+  }, [mapType]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAddProduct(formData);
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Product</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="purchaseDate" className="text-right">
+                Purchase Date
+              </Label>
+              <Input
+                id="purchaseDate"
+                type="date"
+                value={purchaseDate}
+                onChange={(e) => setPurchaseDate(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="expiryDate" className="text-right">
+                Expiry Date
+              </Label>
+              <Input
+                id="expiryDate"
+                type="date"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit">Add Product</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function DeviceDetails() {
   const params = useParams();
   const deviceId = params?.id as string;
   const { auth } = useAuth();
   const [deviceData, setDeviceData] = useState<DeviceData | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchDeviceData = async () => {
@@ -108,14 +205,8 @@ export default function DeviceDetails() {
         } else {
           throw new Error('No data available for this device');
         }
-
-        // Fetch products related to the device
-        const productsResponse = await axios.get(`${API_BASE_URL}/device-products/${deviceId}`, {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        });
-        setProducts(productsResponse.data || []);
       } catch (err) {
-        console.error('Failed to fetch device or product data:', err);
+        console.error('Failed to fetch device data:', err);
         setError('Could not load device data');
         toast.error('Failed to load device data');
       } finally {
@@ -123,10 +214,40 @@ export default function DeviceDetails() {
       }
     };
 
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/products/${deviceId}`, {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        });
+        setProducts(response.data);
+      } catch (err) {
+        console.error('Failed to fetch products:', err);
+        toast.error('Failed to load products');
+      }
+    };
+
     if (deviceId && auth.token) {
       fetchDeviceData();
+      fetchProducts();
     }
   }, [deviceId, auth.token]);
+
+  const handleAddProduct = async (newProduct: Omit<Product, 'id'>) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/products/${deviceId}`,
+        newProduct,
+        {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        }
+      );
+      setProducts([...products, response.data]);
+      toast.success('Product added successfully');
+    } catch (err) {
+      console.error('Failed to add product:', err);
+      toast.error('Failed to add product');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -192,8 +313,20 @@ export default function DeviceDetails() {
           </div>
         </div>
 
+        <div className="mt-8 flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Products</h2>
+          <Button onClick={() => setIsAddProductModalOpen(true)}>Add Product</Button>
+        </div>
+
         <ProductsTable products={products} />
+
+        <AddProductModal
+          isOpen={isAddProductModalOpen}
+          onClose={() => setIsAddProductModalOpen(false)}
+          onAddProduct={handleAddProduct}
+        />
       </main>
     </div>
   );
 }
+
