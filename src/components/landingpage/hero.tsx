@@ -5,9 +5,9 @@ import {motion} from 'framer-motion'
 
 export default function Hero() {
   return (
-    <div className="text-white" style={{
-      background: "linear-gradient(to right, #0b1d35, #0f6a92)",
-    }}>
+    <motion.div className="text-white"  initial={{ backgroundColor: "#0b1d35" }}
+    animate={{ backgroundColor: "#0f6a92" }}
+    transition={{ duration: 5 , repeat: Infinity}}>
       <div className="max-w-10xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row items-center">
             
@@ -41,7 +41,7 @@ export default function Hero() {
           </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
