@@ -2,14 +2,19 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function SignUp() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phoneNumber: '',
     password: '',
   })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -19,21 +24,54 @@ export default function SignUp() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    // Here you would typically send the form data to your backend
-    console.log('Form submitted:', formData)
-    // Reset form after submission
-    setFormData({
-      fullName: '',
-      email: '',
-      phoneNumber: '',
-      password: '',
-    })
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/users/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        throw new Error('Signup failed. Please try again.')
+      }
+
+      await response.json()
+      
+      // Show success toast
+      toast.success('Signup successful! Redirecting to login...')
+      
+      // Reset form
+      setFormData({
+        fullName: '',
+        email: '',
+        phoneNumber: '',
+        password: '',
+      })
+
+      // Redirect after a short delay
+      setTimeout(() => {
+        router.push('/login')
+      }, 2000)
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong'
+      setError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 to-green-400">
+      <Toaster position="top-right" />
       <nav className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -116,11 +154,15 @@ export default function SignUp() {
                 />
               </div>
               <div>
+                {error && (
+                  <p className="text-red-500 text-sm mb-4">{error}</p>
+                )}
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  disabled={loading}
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
                 >
-                  Sign Up
+                  {loading ? 'Signing up...' : 'Sign Up'}
                 </button>
               </div>
             </form>
