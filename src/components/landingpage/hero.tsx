@@ -5,7 +5,9 @@ import {motion} from 'framer-motion'
 
 export default function Hero() {
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-green-400 text-white">
+    <div className="text-white" style={{
+      background: "linear-gradient(to right, #0b1d35, #0f6a92)",
+    }}>
       <div className="max-w-10xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row items-center">
             

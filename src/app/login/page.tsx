@@ -61,7 +61,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 to-green-400">
+    <div className="min-h-screen "  style={{
+      background: "linear-gradient(to right, #0b1d35, #0f6a92)",
+    }}>
       <nav className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">

@@ -68,7 +68,9 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 to-green-400">
+    <div className="min-h-screen " style={{
+      background: "linear-gradient(to right, #0b1d35, #0f6a92)",
+    }}>
       <Toaster position="top-right" />
       <nav className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

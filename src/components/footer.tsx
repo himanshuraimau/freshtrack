@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button'
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-r from-blue-600 to-green-600 text-white">
+    <footer className=" text-white"  style={{
+        background: "linear-gradient(to right, #0b1d35, #0f6a92)",
+      }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Main Content */}
         <div className="text-center mb-12">
