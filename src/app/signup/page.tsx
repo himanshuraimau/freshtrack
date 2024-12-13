@@ -4,6 +4,7 @@ import { useAtom } from 'jotai';
 import { signupFormDataAtom } from '@/atoms/dataAtoms';
 import { loadingAtom, errorAtom } from '@/atoms/uiAtoms';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -81,7 +82,10 @@ export default function SignUp() {
 
       <div className="max-w-7xl mx-auto py-36 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-20">
-          <div className="md:w-2/3 mb-8 md:mb-0 px-4 ">
+          <motion.div className="md:w-2/3 mb-8 md:mb-0 px-4 "
+          initial={{ y: "-100vh" }}
+          animate={{ y: 0 }}
+          transition={{ type: "spring", stiffness: 50 }}>
             <h2 className="text-3xl font-extrabold text-white mb-4">
               Optimize Your Supply Chain with Freshtrack
             </h2>
@@ -97,9 +101,12 @@ export default function SignUp() {
             <p className="text-xl text-white mt-6">
               Sign up now and take control of your supply chain like never before!
             </p>
-          </div>
+          </motion.div>
 
-          <div className="md:w-2/3 bg-white bg-opacity-90 p-8 rounded-lg shadow-md">
+          <motion.div className="md:w-2/3 bg-white bg-opacity-90 p-8 rounded-lg shadow-md"
+           initial={{ x: "-100vw" }}
+           animate={{ x: 0 }}
+           transition={{ type: "spring", stiffness: 50 }}>
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Create Your Account</h3>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
@@ -169,7 +176,7 @@ export default function SignUp() {
                 Login
               </Link>
             </p>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
