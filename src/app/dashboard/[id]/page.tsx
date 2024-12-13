@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from '@/hooks/useAuth';
 import Navbar from '@/components/dashboard/Navbar';
+import { Thermometer, Droplets, MapPin, Clock, Package } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
@@ -47,27 +48,28 @@ interface Product {
 
 function ProductsTable({ products }: { products: Product[] }) {
   return (
-    <div className="border rounded-lg mt-8">
+    <div className="border rounded-lg mt-8 overflow-hidden bg-white/50 backdrop-blur-sm shadow-lg">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Product Name</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>Destination</TableHead>
-            <TableHead>Purchase Date</TableHead>
-            <TableHead>Expiry Date</TableHead>
+          <TableRow className="bg-gray-50/50">
+            <TableHead className="font-semibold">Product Name</TableHead>
+            <TableHead className="font-semibold">Source</TableHead>
+            <TableHead className="font-semibold">Destination</TableHead>
+            <TableHead className="font-semibold">Purchase Date</TableHead>
+            <TableHead className="font-semibold">Expiry Date</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {products.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-gray-500">
+              <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                <Package className="w-6 h-6 mx-auto mb-2 opacity-50" />
                 No products added yet
               </TableCell>
             </TableRow>
           ) : (
             products.map((product) => (
-              <TableRow key={product.id}>
+              <TableRow key={product.id} className="hover:bg-gray-50/50 transition-colors">
                 <TableCell>{product.name}</TableCell>
                 <TableCell>{product.source}</TableCell>
                 <TableCell>{product.destination}</TableCell>
@@ -274,52 +276,83 @@ export default function DeviceDetails() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <Navbar />
-      <main className="p-4">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
+      <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             {deviceData?.device?.deviceName || 'Unknown Device'}
           </h1>
-          <Button onClick={() => window.history.back()}>Back</Button>
+          <Button 
+            onClick={() => window.history.back()}
+            variant="outline"
+            className="hover:bg-gray-100"
+          >
+            Back
+          </Button>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 mt-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-medium mb-2">Temperature</h3>
-              <p className="text-2xl">{deviceData?.temperature ?? 'N/A'}°C</p>
+        <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-xl p-6 mt-4 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <Thermometer className="w-6 h-6 text-blue-600" />
+                <h3 className="font-medium text-lg text-blue-900">Temperature</h3>
+              </div>
+              <p className="text-4xl font-bold text-blue-800">
+                {deviceData?.temperature ?? 'N/A'}
+                <span className="text-2xl ml-1">°C</span>
+              </p>
             </div>
 
-            <div className="p-4 bg-green-50 rounded-lg">
-              <h3 className="font-medium mb-2">Humidity</h3>
-              <p className="text-2xl">{deviceData?.humidity ?? 'N/A'}%</p>
+            <div className="p-6 bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <Droplets className="w-6 h-6 text-green-600" />
+                <h3 className="font-medium text-lg text-green-900">Humidity</h3>
+              </div>
+              <p className="text-4xl font-bold text-green-800">
+                {deviceData?.humidity ?? 'N/A'}
+                <span className="text-2xl ml-1">%</span>
+              </p>
             </div>
           </div>
 
           {deviceData?.location && (
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium mb-2">Location</h3>
-              <p>
+            <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <MapPin className="w-5 h-5 text-gray-600" />
+                <h3 className="font-medium text-gray-900">Location</h3>
+              </div>
+              <p className="text-lg text-gray-700">
                 {deviceData.location.latitude}, {deviceData.location.longitude}
               </p>
             </div>
           )}
 
-          <div className="text-sm text-gray-500 mt-4">
-            Last Updated:{' '}
-            {deviceData?.updatedAt
+          <div className="flex items-center gap-2 text-sm text-gray-600 border-t pt-4">
+            <Clock className="w-4 h-4" />
+            Last Updated: {deviceData?.updatedAt
               ? new Date(deviceData.updatedAt).toLocaleString()
               : 'Never'}
           </div>
         </div>
 
-        <div className="mt-8 flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Products</h2>
-          <Button onClick={() => setIsAddProductModalOpen(true)}>Add Product</Button>
-        </div>
+        <div className="mt-12 space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Package className="w-6 h-6" />
+              Products
+            </h2>
+            <Button 
+              onClick={() => setIsAddProductModalOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+            >
+              Add Product
+            </Button>
+          </div>
 
-        <ProductsTable products={products} />
+          <ProductsTable products={products} />
+        </div>
 
         <AddProductModal
           isOpen={isAddProductModalOpen}
