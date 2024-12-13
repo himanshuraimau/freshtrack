@@ -1,33 +1,30 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import toast, { Toaster } from 'react-hot-toast'
+import { useAtom } from 'jotai';
+import { signupFormDataAtom } from '@/atoms/dataAtoms';
+import { loadingAtom, errorAtom } from '@/atoms/uiAtoms';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function SignUp() {
-  const router = useRouter()
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phoneNumber: '',
-    password: '',
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const router = useRouter();
+  const [formData, setFormData] = useAtom(signupFormDataAtom);
+  const [loading, setLoading] = useAtom(loadingAtom);
+  const [error, setError] = useAtom(errorAtom);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData(prevState => ({
       ...prevState,
       [name]: value
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
     try {
       const response = await fetch('http://localhost:8000/api/v1/users/signup', {
@@ -36,16 +33,16 @@ export default function SignUp() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Signup failed. Please try again.')
+        throw new Error('Signup failed. Please try again.');
       }
 
-      await response.json()
+      await response.json();
       
       // Show success toast
-      toast.success('Signup successful! Redirecting to login...')
+      toast.success('Signup successful! Redirecting to login...');
       
       // Reset form
       setFormData({
@@ -53,21 +50,21 @@ export default function SignUp() {
         email: '',
         phoneNumber: '',
         password: '',
-      })
+      });
 
       // Redirect after a short delay
       setTimeout(() => {
-        router.push('/login')
-      }, 2000)
+        router.push('/login');
+      }, 2000);
 
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Something went wrong'
-      setError(errorMessage)
-      toast.error(errorMessage)
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 to-green-400">

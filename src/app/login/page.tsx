@@ -1,32 +1,63 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
+import { useAtom } from 'jotai';
+import { loginFormDataAtom } from '@/atoms/dataAtoms';
+import { loadingAtom, errorAtom } from '@/atoms/uiAtoms';
+import { useAuth } from '@/hooks/useAuth';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function Login() {
-  const [formData, setFormData] = useState({
-    emailOrPhone: '',
-    password: '',
-  })
+  const router = useRouter();
+  const { login } = useAuth();
+  const [formData, setFormData] = useAtom(loginFormDataAtom);
+  const [, setLoading] = useAtom(loadingAtom);
+  const [, setError] = useAtom(errorAtom);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData(prevState => ({
       ...prevState,
       [name]: value
-    }))
-  }
+    }));
+  };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    // Here you would typically send the form data to your backend
-    console.log('Form submitted:', formData)
-    // Reset form after submission
-    setFormData({
-      emailOrPhone: '',
-      password: '',
-    })
-  }
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.emailOrPhone,
+          phoneNumber: formData.emailOrPhone,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        login(data.token, data.user);
+        toast.success('Login successful!');
+        router.push('/dashboard');
+      } else {
+        throw new Error(data.message || 'Login failed');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 to-green-400">
@@ -84,6 +115,6 @@ export default function Login() {
         </p>
       </div>
     </div>
-  )
+  );
 }
 

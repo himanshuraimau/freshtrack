@@ -1,5 +1,6 @@
 'use client'
 
+<<<<<<< HEAD
 import { useState } from 'react'
 import { Plus, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -144,3 +145,27 @@ export default function Dashboard() {
     </div>
   )
 }
+=======
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+const Dashboard = () => {
+  const router = useRouter()
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      router.push('/login')
+    }
+  }, [router])
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-8">
+      <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+      {/* Add your dashboard content here */}
+    </div>
+  )
+}
+
+export default Dashboard
+>>>>>>> e67eb1b (Implement authentication with Jotai state management and middleware for protected routes)
