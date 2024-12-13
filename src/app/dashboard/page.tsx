@@ -48,7 +48,7 @@ export default function Dashboard() {
 
     try {
       // Updated endpoint to match backend
-      const { data } = await axios.get(`${API_BASE_URL}/devices`, {
+      const { data } = await axios.get(`${API_BASE_URL}/devices/list`, {
         headers: {
           'Authorization': `Bearer ${auth.token}`
         }
