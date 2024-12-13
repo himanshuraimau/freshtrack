@@ -1,15 +1,18 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, RefreshCcw } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
 import { useRouter } from 'next/navigation'
 import Navbar  from '@/components/dashboard/Navbar'
+
+const API_BASE_URL = 'http://localhost:8000/api'
 
 interface Device {
   _id: string       // Changed from 'id' to '_id' to match MongoDB
@@ -29,12 +32,16 @@ export default function Dashboard() {
   const router = useRouter()
   const { auth, logout } = useAuth()
 
-  const fetchDevices = useCallback(async () => {
+  const fetchDevices = async () => {
+    if (!auth.token) {
+      router.push('/login')
+      return
+    }
     setIsLoading(true)
     setError(null)
 
     try {
-      const { data } = await axios.get('http://localhost:8000/api/devices/list', {
+      const { data } = await axios.get(`${API_BASE_URL}/v1/devices/list`, {
         headers: {
           'Authorization': `Bearer ${auth.token}`
         }
@@ -58,58 +65,57 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false)
     }
-  }, [logout, router])
+  }
 
+  // Simplified useEffect that only runs on mount
   useEffect(() => {
-    fetchDevices()
-  }, [fetchDevices])
+    if (auth.token) {
+      fetchDevices()
+    }
+  }, []) // Remove auth.token dependency
 
   const handleAddDevice = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       await axios.post(
-        'http://localhost:8000/api/devices/add',
+        `${API_BASE_URL}/devices/add`,
         newDevice,
         {
           headers: {
             'Authorization': `Bearer ${auth.token}`
           }
         }
-      );
+      )
       
       setNewDevice({ deviceName: '', password: '' })
       setIsDialogOpen(false)
-      toast.success('Device added successfully');
-      fetchDevices() // Manually trigger a re-fetch
+      toast.success('Device added successfully')
+      fetchDevices()
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message || 'Error adding device');
-      } else {
-        toast.error('An unexpected error occurred');
+        toast.error(error.response?.data?.message || 'Error adding device')
       }
     }
   }
 
   const handleDeleteDevice = async (deviceId: string) => {
-    if (!confirm('Are you sure you want to delete this device?')) return;
+    if (!confirm('Are you sure you want to delete this device?')) return
 
     try {
-      await axios.delete(`http://localhost:8000/api/devices/${deviceId}`, {
+      await axios.delete(`${API_BASE_URL}/devices/${deviceId}`, {
         headers: {
           'Authorization': `Bearer ${auth.token}`
         }
-      });
+      })
 
-      toast.success('Device deleted successfully');
-      fetchDevices();
+      toast.success('Device deleted successfully')
+      fetchDevices()
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message || 'Error deleting device');
-      } else {
-        toast.error('An unexpected error occurred');
+        toast.error(error.response?.data?.message || 'Error deleting device')
       }
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
@@ -119,7 +125,18 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Devices</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-gray-900">Devices</h1>
+              <Button
+                onClick={fetchDevices}
+                variant="outline"
+                size="icon"
+                className="rounded-full"
+                disabled={isLoading}
+              >
+                <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
             {devices.length > 0 && (
               <Button
                 onClick={() => setIsDialogOpen(true)}
@@ -160,25 +177,31 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {devices.map((device) => (
-                <div
+                <Link
+                  href={`/dashboard/${device._id}`}
                   key={device._id}
-                  className="p-6 border rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-[1.02] bg-white/90 relative group"
+                  className="block cursor-pointer"
                 >
-                  <button
-                    onClick={() => handleDeleteDevice(device._id)}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </button>
-                  <h3 className="font-medium text-gray-900 text-lg mb-2">{device.deviceName}</h3>
-                  <p className="text-sm text-gray-500 flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
-                    ID: {device._id}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Added: {new Date(device.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
+                  <div className="p-6 border rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-[1.02] bg-white/90 relative group">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDeleteDevice(device._id);
+                      }}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full z-10"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </button>
+                    <h3 className="font-medium text-gray-900 text-lg mb-2">{device.deviceName}</h3>
+                    <p className="text-sm text-gray-500 flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                      ID: {device._id}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Added: {new Date(device.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </Link>
               ))}
             </div>
           )}
@@ -237,8 +260,7 @@ export default function Dashboard() {
             </div>
           </form>
         </DialogContent>
-      </Dialog>
-    </div>
+      </Dialog>    
+    </div>  
   )
 }
-
