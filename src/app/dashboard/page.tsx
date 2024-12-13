@@ -1,12 +1,15 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { Plus, LogOut } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Plus, Trash2 } from 'lucide-react'
+import axios from 'axios'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import Link from 'next/link'
+import { toast } from 'sonner'
+
 import { useRouter } from 'next/navigation'
+import Navbar  from '@/components/dashboard/Navbar'
 
 interface Device {
   _id: string       // Changed from 'id' to '_id' to match MongoDB
@@ -18,6 +21,7 @@ export default function Dashboard() {
   const [devices, setDevices] = useState<Device[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [newDevice, setNewDevice] = useState({
     deviceName: '',  // Changed from 'name' to 'deviceName'
     password: ''
@@ -25,91 +29,91 @@ export default function Dashboard() {
   const router = useRouter()
   const { auth, logout } = useAuth()
 
-  const fetchDevices = async () => {
+  const fetchDevices = useCallback(async () => {
     setIsLoading(true)
+    setError(null)
+
     try {
-      const response = await fetch('http://localhost:8000/api/devices/list', {
+      const { data } = await axios.get('http://localhost:8000/api/devices/list', {
         headers: {
           'Authorization': `Bearer ${auth.token}`
         }
       })
-      
-      if (response.status === 401) {
-        logout();
-        router.push('/login');
-        return;
-      }
 
-      const data = await response.json()
-      if (response.ok) {
+      if (Array.isArray(data.devices)) {
         setDevices(data.devices)
-      } else {
-        console.error('Error fetching devices:', data.message)
       }
     } catch (error) {
-      console.error('Error fetching devices:', error)
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          logout()
+          router.push('/login')
+          return
+        }
+        setError(error.response?.data?.message || error.message)
+      } else {
+        setError('An unknown error occurred')
+      }
+      setDevices([])
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [logout, router])
 
   useEffect(() => {
-    if (auth.token) {
-      fetchDevices()
-    }
-  }, [auth.token])
+    fetchDevices()
+  }, [fetchDevices])
 
   const handleAddDevice = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('http://localhost:8000/api/devices/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${auth.token}`
-        },
-        body: JSON.stringify(newDevice)
-      })
+      await axios.post(
+        'http://localhost:8000/api/devices/add',
+        newDevice,
+        {
+          headers: {
+            'Authorization': `Bearer ${auth.token}`
+          }
+        }
+      );
       
-      const data = await response.json()
-      
-      if (response.ok) {
-        setNewDevice({ deviceName: '', password: '' })
-        setIsDialogOpen(false)
-        // Fetch updated list of devices after adding new one
-        fetchDevices()
-      } else {
-        alert(data.message || 'Error adding device')
-      }
+      setNewDevice({ deviceName: '', password: '' })
+      setIsDialogOpen(false)
+      toast.success('Device added successfully');
+      fetchDevices() // Manually trigger a re-fetch
     } catch (error) {
-      console.error('Error adding device:', error)
-      alert('Error connecting to server')
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.message || 'Error adding device');
+      } else {
+        toast.error('An unexpected error occurred');
+      }
     }
   }
 
+  const handleDeleteDevice = async (deviceId: string) => {
+    if (!confirm('Are you sure you want to delete this device?')) return;
+
+    try {
+      await axios.delete(`http://localhost:8000/api/devices/${deviceId}`, {
+        headers: {
+          'Authorization': `Bearer ${auth.token}`
+        }
+      });
+
+      toast.success('Device deleted successfully');
+      fetchDevices();
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.message || 'Error deleting device');
+      } else {
+        toast.error('An unexpected error occurred');
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <Link 
-              href="/"
-              className="text-2xl font-bold text-white hover:text-blue-100 transition-colors"
-            >
-              FRESHTRACK
-            </Link>
-            <Button 
-              variant="ghost"
-              onClick={logout}
-              className="flex items-center gap-2 text-white hover:text-blue-100 hover:bg-blue-700/50"
-            >
-              <LogOut className="h-4 w-4" />
-              LOG OUT
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -131,6 +135,16 @@ export default function Dashboard() {
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
+          ) : error ? (
+            <div className="flex flex-col justify-center items-center h-64 space-y-4">
+              <p className="text-red-500">{error}</p>
+              <Button
+                onClick={fetchDevices}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Retry
+              </Button>
+            </div>
           ) : devices.length === 0 ? (
             <div className="flex flex-col justify-center items-center h-64 space-y-4">
               <p className="text-gray-500">No devices added yet</p>
@@ -148,8 +162,14 @@ export default function Dashboard() {
               {devices.map((device) => (
                 <div
                   key={device._id}
-                  className="p-6 border rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-[1.02] bg-white/90 cursor-pointer"
+                  className="p-6 border rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-[1.02] bg-white/90 relative group"
                 >
+                  <button
+                    onClick={() => handleDeleteDevice(device._id)}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </button>
                   <h3 className="font-medium text-gray-900 text-lg mb-2">{device.deviceName}</h3>
                   <p className="text-sm text-gray-500 flex items-center gap-2">
                     <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
