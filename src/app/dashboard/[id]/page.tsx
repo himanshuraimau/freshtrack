@@ -1,10 +1,5 @@
 'use client';
-
-// Add these imports at the top
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
-import { useCallback, useState } from 'react';
-
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -48,20 +43,7 @@ interface Product {
   destination: string;
   purchaseDate: string;
   expiryDate: string;
-  sourceLocation?: {
-    lat: number;
-    lng: number;
-  };
-  destinationLocation?: {
-    lat: number;
-    lng: number;
-  };
 }
-
-const defaultCenter = {
-  lat: 13.0827,
-  lng: 80.2707
-};
 
 function ProductsTable({ products }: { products: Product[] }) {
   return (
@@ -111,41 +93,58 @@ function AddProductModal({ isOpen, onClose, onAddProduct }: {
     destination: '',
     purchaseDate: '',
     expiryDate: '',
-    sourceLocation: defaultCenter,
-    destinationLocation: defaultCenter,
   });
-
-  const [purchaseDate, setPurchaseDate] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [mapType, setMapType] = useState<'source' | 'destination'>('source');
-  const [showMap, setShowMap] = useState(false);
-
-  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
-    const lat = e.latLng?.lat();
-    const lng = e.latLng?.lng();
-    
-    if (lat && lng) {
-      setFormData(prev => ({
-        ...prev,
-        [mapType === 'source' ? 'sourceLocation' : 'destinationLocation']: { lat, lng }
-      }));
-    }
-  }, [mapType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAddProduct({ ...formData, purchaseDate, expiryDate });
+    onAddProduct(formData);
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add New Product</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="source" className="text-right">
+                Source
+              </Label>
+              <Input
+                id="source"
+                value={formData.source}
+                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="destination" className="text-right">
+                Destination
+              </Label>
+              <Input
+                id="destination"
+                value={formData.destination}
+                onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                className="col-span-3"
+                required
+              />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="purchaseDate" className="text-right">
                 Purchase Date
@@ -153,8 +152,8 @@ function AddProductModal({ isOpen, onClose, onAddProduct }: {
               <Input
                 id="purchaseDate"
                 type="date"
-                value={purchaseDate}
-                onChange={(e) => setPurchaseDate(e.target.value)}
+                value={formData.purchaseDate}
+                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
                 className="col-span-3"
                 required
               />
@@ -166,8 +165,8 @@ function AddProductModal({ isOpen, onClose, onAddProduct }: {
               <Input
                 id="expiryDate"
                 type="date"
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
+                value={formData.expiryDate}
+                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
                 className="col-span-3"
                 required
               />
