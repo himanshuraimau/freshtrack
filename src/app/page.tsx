@@ -1,10 +1,19 @@
-import LandingPage from "@/components/LandingPage";
-
+import Navbar from "@/components/landingpage/navbar"
+import Pricing from "@/components/landingpage/pricing"
+import Features from "@/components/landingpage/features"
+import Hero from "@/components/landingpage/hero"
 
 export default function Home() {
   return (
   <div>
-  <LandingPage/>
+   <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+      <Navbar />
+      <main className="pt-16">
+        <Hero />
+        <Features />
+        <Pricing />
+      </main>
+    </div>
   </div>
   )
 }
