@@ -11,6 +11,9 @@ import Link from 'next/link'
 
 import { useRouter } from 'next/navigation'
 import Navbar  from '@/components/dashboard/Navbar'
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1'
 
@@ -26,6 +29,29 @@ interface Device {
   }
 }
 
+const DefaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+function LocationPicker({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) {
+  const [position, setPosition] = useState<[number, number] | null>(null);
+
+  useMapEvents({
+    click(e) {
+      setPosition([e.latlng.lat, e.latlng.lng]);
+      onLocationSelect(e.latlng.lat, e.latlng.lng);
+    },
+  });
+
+  return position ? <Marker position={position} /> : null;
+}
+
 export default function Dashboard() {
   const [devices, setDevices] = useState<Device[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -33,7 +59,11 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [newDevice, setNewDevice] = useState({
     deviceName: '',  // Changed from 'name' to 'deviceName'
-    password: ''
+    password: '',
+    location: {
+      latitude: 0,
+      longitude: 0,
+    },
   })
   const router = useRouter()
   const { auth, logout } = useAuth()
@@ -112,7 +142,7 @@ export default function Dashboard() {
       )
       
       console.log('Device added:', response.data)
-      setNewDevice({ deviceName: '', password: '' })
+      setNewDevice({ deviceName: '', password: '', location: { latitude: 0, longitude: 0 } });
       setIsDialogOpen(false)
       toast.success('Device added successfully')
       fetchDevices()
@@ -278,6 +308,18 @@ export default function Dashboard() {
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Device Location</label>
+              <MapContainer center={[51.505, -0.09]} zoom={13} style={{ height: '200px', width: '100%' }}>
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                <LocationPicker
+                  onLocationSelect={(lat, lng) => setNewDevice({ ...newDevice, location: { latitude: lat, longitude: lng } })}
+                />
+              </MapContainer>
             </div>
             <div className="flex justify-end gap-3">
               <Button 
