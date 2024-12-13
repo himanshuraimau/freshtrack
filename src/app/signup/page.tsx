@@ -44,9 +44,9 @@ export default function SignUp() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row items-center justify-between">
-          <div className="md:w-1/2 mb-8 md:mb-0 px-4">
+      <div className="max-w-7xl mx-auto py-36 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-20">
+          <div className="md:w-2/3 mb-8 md:mb-0 px-4 ">
             <h2 className="text-3xl font-extrabold text-white mb-4">
               Optimize Your Supply Chain with Freshtrack
             </h2>
@@ -64,11 +64,11 @@ export default function SignUp() {
             </p>
           </div>
 
-          <div className="md:w-1/2 bg-white bg-opacity-90 p-8 rounded-lg shadow-md">
+          <div className="md:w-2/3 bg-white bg-opacity-90 p-8 rounded-lg shadow-md">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Create Your Account</h3>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">Full Name</label>
+                <label htmlFor="fullName" className="block font-medium text-xl text-gray-700">Full Name</label>
                 <input
                   type="text"
                   id="fullName"
@@ -80,7 +80,7 @@ export default function SignUp() {
                 />
               </div>
               <div className="mb-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                <label htmlFor="email" className="block text-xl font-medium text-gray-700">Email</label>
                 <input
                   type="email"
                   id="email"
@@ -92,7 +92,7 @@ export default function SignUp() {
                 />
               </div>
               <div className="mb-4">
-                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Phone Number</label>
+                <label htmlFor="phoneNumber" className="block text-xl font-medium text-gray-700">Phone Number</label>
                 <input
                   type="tel"
                   id="phoneNumber"
@@ -104,7 +104,7 @@ export default function SignUp() {
                 />
               </div>
               <div className="mb-6">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+                <label htmlFor="password" className="block text-xl font-medium text-gray-700">Password</label>
                 <input
                   type="password"
                   id="password"
@@ -124,7 +124,7 @@ export default function SignUp() {
                 </button>
               </div>
             </form>
-            <p className="mt-4 text-center text-sm text-gray-600">
+            <p className="mt-4 text-center text-l text-gray-600">
               Already signed in?{' '}
               <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
                 Login

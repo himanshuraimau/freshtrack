@@ -44,7 +44,7 @@ export default function Login() {
         <h2 className="text-3xl font-bold text-gray-900 mb-6">Login to Freshtrack</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="emailOrPhone" className="block text-sm font-medium text-gray-700">Email or Phone Number</label>
+            <label htmlFor="emailOrPhone" className="block text-xl font-medium text-gray-700">Email or Phone Number</label>
             <input
               type="text"
               id="emailOrPhone"
@@ -56,7 +56,7 @@ export default function Login() {
             />
           </div>
           <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+            <label htmlFor="password" className="block text-xl font-medium text-gray-700">Password</label>
             <input
               type="password"
               id="password"
@@ -76,7 +76,7 @@ export default function Login() {
             </button>
           </div>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
+        <p className="mt-4 text-center text-l text-gray-600">
           New to Freshtrack?{' '}
           <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
             Sign up
