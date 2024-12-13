@@ -5,6 +5,7 @@ import { loginFormDataAtom } from '@/atoms/dataAtoms';
 import { loadingAtom, errorAtom } from '@/atoms/uiAtoms';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import {motion} from 'framer-motion'
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -71,7 +72,10 @@ export default function Login() {
         </div>
       </nav>
 
-      <div className="max-w-md mx-auto mt-20 bg-white p-8 rounded-lg shadow-md">
+      <motion.div className="max-w-md mx-auto mt-20 bg-white p-8 rounded-lg shadow-md" 
+      initial={{ x: "-100vw" }}
+      animate={{ x: 0 }}
+      transition={{ type: "spring", stiffness: 50 }}>
         <h2 className="text-3xl font-bold text-gray-900 mb-6">Login to Freshtrack</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -113,7 +117,7 @@ export default function Login() {
             Sign up
           </Link>
         </p>
-      </div>
+      </ motion.div>
     </div>
   );
 }

@@ -10,9 +10,9 @@ export default function Hero() {
         <div className="flex flex-col lg:flex-row items-center">
             
           <motion.div className=" mb-8 lg:mb-0 "
-                initial={{ x: "-100vw" }}
-                animate={{ x: 0 }}
-                transition={{ type: "spring", stiffness: 50 }}>
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 3 }}>
             <Image
               src="/supplyone.jpeg"
               alt="Supply Chain Management"
@@ -24,7 +24,7 @@ export default function Hero() {
           <motion.div className=" lg:pl-32"
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
-           transition={{ duration: 3 }}>
+           transition={{ duration: 2 }}>
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
               Revolutionize Your Supply Chain
             </h1>
