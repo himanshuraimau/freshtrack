@@ -3,18 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from '@/hooks/useAuth';
 import Navbar from '@/components/dashboard/Navbar';
 
@@ -36,151 +25,6 @@ interface DeviceData {
   updatedAt: string;
 }
 
-interface Product {
-  id: string;
-  name: string;
-  source: string;
-  destination: string;
-  purchaseDate: string;
-  expiryDate: string;
-}
-
-function ProductsTable({ products }: { products: Product[] }) {
-  return (
-    <div className="border rounded-lg mt-8">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Product Name</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>Destination</TableHead>
-            <TableHead>Purchase Date</TableHead>
-            <TableHead>Expiry Date</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {products.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-gray-500">
-                No products added yet
-              </TableCell>
-            </TableRow>
-          ) : (
-            products.map((product) => (
-              <TableRow key={product.id}>
-                <TableCell>{product.name}</TableCell>
-                <TableCell>{product.source}</TableCell>
-                <TableCell>{product.destination}</TableCell>
-                <TableCell>{product.purchaseDate}</TableCell>
-                <TableCell>{product.expiryDate}</TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-function AddProductModal({ isOpen, onClose, onAddProduct }: {
-  isOpen: boolean;
-  onClose: () => void;
-  onAddProduct: (product: Omit<Product, 'id'>) => void;
-}) {
-  const [formData, setFormData] = useState({
-    name: '',
-    source: '',
-    destination: '',
-    purchaseDate: '',
-    expiryDate: '',
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onAddProduct(formData);
-    onClose();
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="source" className="text-right">
-                Source
-              </Label>
-              <Input
-                id="source"
-                value={formData.source}
-                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="destination" className="text-right">
-                Destination
-              </Label>
-              <Input
-                id="destination"
-                value={formData.destination}
-                onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="purchaseDate" className="text-right">
-                Purchase Date
-              </Label>
-              <Input
-                id="purchaseDate"
-                type="date"
-                value={formData.purchaseDate}
-                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expiryDate" className="text-right">
-                Expiry Date
-              </Label>
-              <Input
-                id="expiryDate"
-                type="date"
-                value={formData.expiryDate}
-                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                className="col-span-3"
-                required
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit">Add Product</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export default function DeviceDetails() {
   const params = useParams();
   const deviceId = params?.id as string;
@@ -188,8 +32,8 @@ export default function DeviceDetails() {
   const [deviceData, setDeviceData] = useState<DeviceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  // const [products, setProducts] = useState<Product[]>([]);
+  // const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchDeviceData = async () => {
@@ -215,40 +59,40 @@ export default function DeviceDetails() {
       }
     };
 
-    const fetchProducts = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/products/${deviceId}`, {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        });
-        setProducts(response.data);
-      } catch (err) {
-        console.error('Failed to fetch products:', err);
-        toast.error('Failed to load products');
-      }
-    };
+    // const fetchProducts = async () => {
+    //   try {
+    //     const response = await axios.get(`${API_BASE_URL}/products/${deviceId}`, {
+    //       headers: { Authorization: `Bearer ${auth.token}` },
+    //     });
+    //     setProducts(response.data);
+    //   } catch (err) {
+    //     console.error('Failed to fetch products:', err);
+    //     toast.error('Failed to load products');
+    //   }
+    // };
 
     if (deviceId && auth.token) {
       fetchDeviceData();
-      fetchProducts();
+      // fetchProducts();
     }
   }, [deviceId, auth.token]);
 
-  const handleAddProduct = async (newProduct: Omit<Product, 'id'>) => {
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/products/${deviceId}`,
-        newProduct,
-        {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        }
-      );
-      setProducts([...products, response.data]);
-      toast.success('Product added successfully');
-    } catch (err) {
-      console.error('Failed to add product:', err);
-      toast.error('Failed to add product');
-    }
-  };
+  // const handleAddProduct = async (newProduct: Omit<Product, 'id'>) => {
+  //   try {
+  //     const response = await axios.post(
+  //       `${API_BASE_URL}/products/${deviceId}`,
+  //       newProduct,
+  //       {
+  //         headers: { Authorization: `Bearer ${auth.token}` },
+  //       }
+  //     );
+  //     setProducts([...products, response.data]);
+  //     toast.success('Product added successfully');
+  //   } catch (err) {
+  //     console.error('Failed to add product:', err);
+  //     toast.error('Failed to add product');
+  //   }
+  // };
 
   if (isLoading) {
     return (
@@ -314,7 +158,7 @@ export default function DeviceDetails() {
           </div>
         </div>
 
-        <div className="mt-8 flex justify-between items-center">
+        {/* <div className="mt-8 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Products</h2>
           <Button onClick={() => setIsAddProductModalOpen(true)}>Add Product</Button>
         </div>
@@ -325,7 +169,7 @@ export default function DeviceDetails() {
           isOpen={isAddProductModalOpen}
           onClose={() => setIsAddProductModalOpen(false)}
           onAddProduct={handleAddProduct}
-        />
+        /> */}
       </main>
     </div>
   );
