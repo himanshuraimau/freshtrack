@@ -4,7 +4,7 @@
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { useCallback, useState } from 'react';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -115,6 +115,8 @@ function AddProductModal({ isOpen, onClose, onAddProduct }: {
     destinationLocation: defaultCenter,
   });
 
+  const [purchaseDate, setPurchaseDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
   const [mapType, setMapType] = useState<'source' | 'destination'>('source');
   const [showMap, setShowMap] = useState(false);
 
@@ -132,7 +134,7 @@ function AddProductModal({ isOpen, onClose, onAddProduct }: {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAddProduct(formData);
+    onAddProduct({ ...formData, purchaseDate, expiryDate });
     onClose();
   };
 
