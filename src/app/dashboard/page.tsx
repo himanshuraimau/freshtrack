@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Plus, LogOut } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -20,48 +21,41 @@ export default function Dashboard() {
     password: ''
   })
   const router = useRouter()
+  const { auth, logout } = useAuth()
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
+    if (!auth.isAuthenticated) {
       router.push('/login')
       return
     }
-    // Fetch devices from API here
-    fetchDevices()
-  }, [router])
 
-  const fetchDevices = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/devices', {
-        headers: {
-          'Authorization': `Bearer ${token}`
+    const fetchDevices = async () => {
+      try {
+        const response = await fetch('/api/devices', {
+          headers: {
+            'Authorization': `Bearer ${auth.token}`
+          }
+        })
+        const data = await response.json()
+        if (response.ok) {
+          setDevices(data.devices)
         }
-      })
-      const data = await response.json()
-      if (response.ok) {
-        setDevices(data.devices)
+      } catch (error) {
+        console.error('Error fetching devices:', error)
       }
-    } catch (error) {
-      console.error('Error fetching devices:', error)
     }
-  }
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    router.push('/login')
-  }
+    fetchDevices()
+  }, [auth.isAuthenticated, auth.token, router])
 
   const handleAddDevice = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch('/api/devices', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${auth.token}`
         },
         body: JSON.stringify(newDevice)
       })
@@ -91,7 +85,7 @@ export default function Dashboard() {
             </Link>
             <Button 
               variant="outline"
-              onClick={handleLogout}
+              onClick={logout}
               className="flex items-center gap-2"
             >
               <LogOut className="h-4 w-4" />
