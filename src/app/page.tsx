@@ -3,7 +3,6 @@ import Pricing from "@/components/landingpage/pricing"
 import Features from "@/components/landingpage/features"
 import Hero from "@/components/landingpage/hero"
 import Footer from "@/components/footer"
-import TemperatureGraph from "./dashboard/[id]/analytics/analytics"
 
 export default function Home() {
   return (
@@ -14,7 +13,6 @@ export default function Home() {
         <Hero />
         <Features />
         <Pricing />
-        <TemperatureGraph/>
       </main>
       <Footer />
     </div>
