@@ -17,7 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from '@/hooks/useAuth';
 import Navbar from '@/components/dashboard/Navbar';
-import { Thermometer, Droplets, MapPin, Clock, Package } from 'lucide-react';
+import { Thermometer, Droplets, MapPin, Clock, Package, LineChart, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
@@ -283,13 +284,25 @@ export default function DeviceDetails() {
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             {deviceData?.device?.deviceName || 'Unknown Device'}
           </h1>
-          <Button 
-            onClick={() => window.history.back()}
-            variant="outline"
-            className="hover:bg-gray-100"
-          >
-            Back
-          </Button>
+          <div className="flex gap-3">
+            <Link href={`/dashboard/${deviceId}/analysis`}>
+              <Button
+                variant="outline"
+                className="hover:bg-blue-50 flex items-center gap-2"
+              >
+                <LineChart className="w-4 h-4" />
+                Analytics
+              </Button>
+            </Link>
+            <Button 
+              onClick={() => window.history.back()}
+              variant="outline"
+              className="hover:bg-gray-100 flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+          </div>
         </div>
 
         <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-xl p-6 mt-4 space-y-6">

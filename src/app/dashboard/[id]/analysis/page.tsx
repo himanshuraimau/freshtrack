@@ -2,46 +2,76 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from 'next/navigation';
-import axios from 'axios';
 import { toast } from 'sonner';
 import Navbar from '@/components/dashboard/Navbar';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-  PointElement,
-} from "chart.js";
-import { Bar, Line } from "react-chartjs-2";
+import dynamic from 'next/dynamic';
+import { RefreshCw } from 'lucide-react';
+import type { ChartData, ChartOptions } from 'chart.js';
+import { analyticsService } from '@/services/analytics';
+import axios from 'axios';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-  PointElement
-);
+const API_BASE_URL = 'http://localhost:8000/api/v1';  // Add this line
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+// Dynamic import with no SSR
+const LineChart = dynamic(() => import('@/components/charts/LineChart'), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] bg-gray-100 animate-pulse rounded-lg" />
+  )
+});
 
-// Fallback mock data
-const MOCK_DATA = {
-  temperature: [22.5, 23.1, 23.4, 22.8, 22.9, 23.2, 23.5, 23.1, 22.7, 22.4],
-  humidity: [45, 46, 44, 45, 47, 46, 45, 44, 46, 45],
-  timeLabels: Array.from({ length: 10 }, (_, i) => {
-    const date = new Date();
-    date.setMinutes(date.getMinutes() - (9 - i) * 30);
-    return date.toLocaleTimeString();
-  }),
+interface ChartDataState {
+  temperature: number[];
+  humidity: number[];
+  timeLabels: string[];
+}
+
+// Add these chart customizations
+const chartOptions: ChartOptions<'line'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "top",
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      callbacks: {
+        label: function(context: any) {
+          const label = context.dataset.label || '';
+          const value = context.parsed.y;
+          return `${label}: ${value}${context.dataset.label?.includes('Temperature') ? '°C' : '%'}`;
+        }
+      }
+    }
+  },
+  scales: {
+    y: {
+      beginAtZero: false, // Changed to false for better scale
+      grid: {
+        color: 'rgba(0, 0, 0, 0.1)',
+      },
+      ticks: {
+        callback: (value) => `${value}${value > 50 ? '%' : '°C'}`, // Add units
+      },
+    },
+    x: {
+      grid: {
+        display: false,
+      },
+      ticks: {
+        maxRotation: 45, // Angle the timestamps for better readability
+      }
+    },
+  },
+  interaction: {
+    mode: 'nearest',
+    axis: 'x',
+    intersect: false
+  },
 };
 
 const AnalyticsPage = () => {
@@ -49,128 +79,119 @@ const AnalyticsPage = () => {
   const deviceId = params?.id as string;
   const { auth } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState({
-    temperature: [] as number[],
-    humidity: [] as number[],
-    timeLabels: [] as string[],
+  const [data, setData] = useState<ChartDataState>({
+    temperature: [],
+    humidity: [],
+    timeLabels: [],
   });
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/device-data/${deviceId}/analytics`, {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        });
-
-        if (!response.data || response.data.length === 0) {
-          // Use mock data if no data is available
-          setData(MOCK_DATA);
-          toast.warning('Using sample data for demonstration');
-          return;
-        }
-
-        // Process the data
-        const processedData = {
-          temperature: response.data.map((d: any) => d.temperature) || MOCK_DATA.temperature,
-          humidity: response.data.map((d: any) => d.humidity) || MOCK_DATA.humidity,
-          timeLabels: response.data.map((d: any) => 
-            new Date(d.createdAt).toLocaleTimeString()
-          ) || MOCK_DATA.timeLabels,
-        };
-
-        setData(processedData);
-      } catch (err) {
-        console.error('Failed to fetch analytics:', err);
-        // Fallback to mock data on error
-        setData(MOCK_DATA);
-        toast.warning('Using sample data due to API error');
-      } finally {
-        setIsLoading(false);
+  const fetchAnalytics = async () => {
+    try {
+      setIsRefreshing(true);
+      setError(null);
+      
+      if (!deviceId) {
+        throw new Error('Missing device ID');
       }
-    };
 
+      const response = await axios.get(`${API_BASE_URL}/device-data/${deviceId}`, {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+
+      // Get the data array from response
+      const deviceReadings = Array.isArray(response.data) ? response.data : [];
+      
+      if (deviceReadings.length === 0) {
+        throw new Error('No data available');
+      }
+
+      // Take last 24 readings and reverse for chronological order
+      const recentReadings = deviceReadings.slice(-24).reverse();
+
+      const processedData = {
+        temperature: recentReadings.map(d => Number(d.temperature) || 0),
+        humidity: recentReadings.map(d => Number(d.humidity) || 0),
+        timeLabels: recentReadings.map(d => 
+          new Date(d.createdAt).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })
+        ),
+      };
+
+      setData(processedData);
+
+      // Calculate averages
+      const avgTemp = recentReadings.reduce((sum, d) => sum + (Number(d.temperature) || 0), 0) / recentReadings.length;
+      const avgHumidity = recentReadings.reduce((sum, d) => sum + (Number(d.humidity) || 0), 0) / recentReadings.length;
+
+      toast.success(
+        `Average Temperature: ${avgTemp.toFixed(1)}°C\n` +
+        `Average Humidity: ${avgHumidity.toFixed(1)}%`
+      );
+
+    } catch (err) {
+      console.error('Data fetch error:', err);
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 404) {
+          setError('No data available for this device');
+        } else if (err.response?.status === 401) {
+          setError('Authentication failed');
+        } else {
+          setError('Failed to fetch device data');
+        }
+      } else {
+        setError('An unexpected error occurred');
+      }
+      toast.error('Error loading data');
+    } finally {
+      setIsRefreshing(false);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (deviceId && auth.token) {
       fetchAnalytics();
-      // Set up polling every 5 minutes
-      const interval = setInterval(fetchAnalytics, 5 * 60 * 1000);
-      return () => clearInterval(interval);
     } else {
-      // Use mock data if no deviceId or token
-      setData(MOCK_DATA);
+      setError('Invalid device or authentication');
       setIsLoading(false);
     }
   }, [deviceId, auth.token]);
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: "top" as const,
-      },
-      title: {
-        display: true,
-        text: "Sensor Data Analytics",
-        color: '#1f2937',
-        font: {
-          size: 16,
-          weight: 'bold',
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.1)',
-        },
-        ticks: {
-          callback: (value: number) => {
-            return value.toFixed(1);
-          },
-        },
-      },
-      x: {
-        grid: {
-          display: false,
-        },
-      },
-    },
-    interaction: {
-      mode: 'index' as const,
-      intersect: false,
-    },
-  };
-
-  const temperatureGraphData = {
+  const createChartData = (
+    label: string,
+    data: number[],
+    color: string,
+    bgColor: string
+  ): ChartData<'line'> => ({
     labels: data.timeLabels,
-    datasets: [
-      {
-        label: "Temperature (°C)",
-        data: data.temperature,
-        backgroundColor: "rgba(239, 68, 68, 0.2)",
-        borderColor: "rgb(239, 68, 68)",
-        borderWidth: 2,
-        tension: 0.3,
-      },
-    ],
-  };
+    datasets: [{
+      label,
+      data,
+      backgroundColor: bgColor,
+      borderColor: color,
+      borderWidth: 2,
+      tension: 0.3,
+      fill: false, // Remove fill option
+    }],
+  });
 
-  const humidityGraphData = {
-    labels: data.timeLabels,
-    datasets: [
-      {
-        label: "Humidity (%)",
-        data: data.humidity,
-        backgroundColor: "rgba(59, 130, 246, 0.2)",
-        borderColor: "rgb(59, 130, 246)",
-        borderWidth: 2,
-        tension: 0.3,
-        fill: true,
-      },
-    ],
-  };
+  const temperatureGraphData = createChartData(
+    "Temperature (°C)",
+    data.temperature,
+    "rgb(239, 68, 68)",
+    "rgba(239, 68, 68, 0.2)"
+  );
+
+  const humidityGraphData = createChartData(
+    "Humidity (%)",
+    data.humidity,
+    "rgb(59, 130, 246)",
+    "rgba(59, 130, 246, 0.2)"
+  );
 
   if (isLoading) {
     return (
@@ -201,24 +222,39 @@ const AnalyticsPage = () => {
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <Button 
-            onClick={() => window.history.back()}
-            variant="outline"
-            className="hover:bg-gray-100"
-          >
-            Back
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={fetchAnalytics}
+              variant="outline"
+              className="hover:bg-gray-100"
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            <Button 
+              onClick={() => window.history.back()}
+              variant="outline"
+              className="hover:bg-gray-100"
+            >
+              Back
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-xl p-6">
             <h2 className="text-xl font-semibold mb-4">Temperature Trend</h2>
-            <Line options={options} data={temperatureGraphData} />
+            <div className="h-[400px]"> {/* Add fixed height container */}
+              <LineChart options={chartOptions} data={temperatureGraphData} />
+            </div>
           </div>
           
           <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-xl p-6">
             <h2 className="text-xl font-semibold mb-4">Humidity Trend</h2>
-            <Line options={options} data={humidityGraphData} />
+            <div className="h-[400px]"> {/* Add fixed height container */}
+              <LineChart options={chartOptions} data={humidityGraphData} />
+            </div>
           </div>
         </div>
       </main>
